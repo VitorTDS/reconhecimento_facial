@@ -2,6 +2,8 @@
 import cv2
 import numpy as np
 import os
+import threading
+
 DEEPFACE_IMPORT_ERROR = None
 
 try:
@@ -9,10 +11,10 @@ try:
 except Exception as exc:
     DeepFace = None
     DEEPFACE_IMPORT_ERROR = exc
-import threading
 
 app = Flask(__name__)
-PASTA_ROSTOS = r"C:\Users\vf619\rostos_conhecidos"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PASTA_ROSTOS = os.path.join(BASE_DIR, "rostos_conhecidos")
 
 indice_atual = 0
 pessoas_detectadas = []
@@ -25,8 +27,27 @@ cam_proc = cv2.VideoCapture(0)
 
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
+
+def imprimir_diagnostico_deepface():
+    print('[AVISO] DeepFace indisponivel. Reconhecimento desativado (video continua funcionando).')
+    print('[AVISO] Para reconhecimento, use Python 3.10-3.12 com DeepFace/TensorFlow.')
+    print('[AVISO] Instale/atualize dependencias com: pip install -r requirements.txt')
+    if DEEPFACE_IMPORT_ERROR is not None:
+        detalhe = str(DEEPFACE_IMPORT_ERROR)
+        print(f'[AVISO] Detalhe tecnico: {detalhe}')
+        if "No module named 'pandas'" in detalhe:
+            print('[AVISO] Dependencia ausente: pandas. Execute: pip install pandas')
+        if "No module named 'tensorflow'" in detalhe:
+            print('[AVISO] Dependencia ausente: tensorflow. Execute: pip install tensorflow')
+            print('[AVISO] Se estiver no Python 3.13+, crie um ambiente com Python 3.10-3.12 para habilitar reconhecimento.')
+
+
 def processar_frames():
     if DeepFace is None:
+        return
+
+    if not os.path.isdir(PASTA_ROSTOS):
+        print(f"[AVISO] Pasta de rostos nao encontrada: {PASTA_ROSTOS}")
         return
 
     global pessoas_detectadas
@@ -38,14 +59,14 @@ def processar_frames():
         frame_count += 1
         if frame_count % 40 == 0:
             try:
-                pequeno = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
+                pequeno = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
                 gray = cv2.cvtColor(pequeno, cv2.COLOR_BGR2GRAY)
-                rostos = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(40,40))
+                rostos = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
                 img_h, img_w = frame.shape[:2]
                 novas_pessoas = []
                 for (x, y, w, h) in rostos:
-                    x2, y2, w2, h2 = x*2, y*2, w*2, h*2
-                    rosto_crop = frame[y2:y2+h2, x2:x2+w2]
+                    x2, y2, w2, h2 = x * 2, y * 2, w * 2, h * 2
+                    rosto_crop = frame[y2:y2 + h2, x2:x2 + w2]
                     if rosto_crop.size == 0:
                         continue
                     temp = f"tmp_{x}_{y}.jpg"
@@ -55,10 +76,10 @@ def processar_frames():
                         if len(busca) > 0 and not busca[0].empty:
                             identidade = busca[0].iloc[0]["identity"]
                             nome = os.path.splitext(os.path.basename(identidade))[0]
-                            nome = nome.replace("_ok","").replace("_"," ").title()
+                            nome = nome.replace("_ok", "").replace("_", " ").title()
                         else:
                             nome = "Desconhecido"
-                    except:
+                    except Exception:
                         nome = "Desconhecido"
                     if os.path.exists(temp):
                         os.remove(temp)
@@ -72,8 +93,9 @@ def processar_frames():
                     })
                 with lock:
                     pessoas_detectadas = novas_pessoas
-            except:
+            except Exception:
                 pass
+
 
 def gerar_frames():
     while True:
@@ -83,18 +105,22 @@ def gerar_frames():
         ret, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/video')
 def video():
     return Response(gerar_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+
 @app.route('/status')
 def status():
     with lock:
         return jsonify(pessoas=pessoas_detectadas, camera=indice_atual)
+
 
 @app.route('/trocar_camera', methods=['POST'])
 def trocar_camera():
@@ -111,12 +137,15 @@ def trocar_camera():
         return jsonify(sucesso=True, camera=indice_atual)
     return jsonify(sucesso=False, camera=indice_atual)
 
+
 if __name__ == '__main__':
+    if not os.path.isdir(PASTA_ROSTOS):
+        os.makedirs(PASTA_ROSTOS, exist_ok=True)
+        print(f"[AVISO] Pasta '{PASTA_ROSTOS}' criada. Adicione fotos de referencia para reconhecer pessoas.")
+
     if DeepFace is None:
-        print('[AVISO] DeepFace indisponivel. Reconhecimento desativado (video continua funcionando).')
-        print('[AVISO] Para reconhecimento, use Python 3.10-3.12 com DeepFace/TensorFlow.')
-        if DEEPFACE_IMPORT_ERROR is not None:
-            print(f'[AVISO] Detalhe tecnico: {DEEPFACE_IMPORT_ERROR}')
+        imprimir_diagnostico_deepface()
+
     t = threading.Thread(target=processar_frames, daemon=True)
     t.start()
     print("\n[INFO] Acesse: http://localhost:5000\n")
