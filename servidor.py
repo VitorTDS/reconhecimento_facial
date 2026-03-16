@@ -37,6 +37,9 @@ def imprimir_diagnostico_deepface():
         print(f'[AVISO] Detalhe tecnico: {detalhe}')
         if "No module named 'pandas'" in detalhe:
             print('[AVISO] Dependencia ausente: pandas. Execute: pip install pandas')
+        if "No module named 'tensorflow'" in detalhe:
+            print('[AVISO] Dependencia ausente: tensorflow. Execute: pip install tensorflow')
+            print('[AVISO] Se estiver no Python 3.13+, crie um ambiente com Python 3.10-3.12 para habilitar reconhecimento.')
 
 
 def processar_frames():
