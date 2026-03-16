@@ -1,16 +1,22 @@
 import cv2
 import numpy as np
 import os
+DEEPFACE_IMPORT_ERROR = None
+
 try:
     from deepface import DeepFace
-except ImportError:
+except Exception as exc:
     DeepFace = None
+    DEEPFACE_IMPORT_ERROR = exc
 
 PASTA_ROSTOS = "rostos_conhecidos"
 
 def main():
     if DeepFace is None:
-        print("[ERRO] DeepFace nao instalado. Use Python 3.10-3.12 e execute: pip install -r requirements.txt")
+        print("[ERRO] DeepFace indisponivel neste ambiente.")
+        print("       Use Python 3.10-3.12 para reconhecimento facial com DeepFace/TensorFlow.")
+        if DEEPFACE_IMPORT_ERROR is not None:
+            print(f"       Detalhe tecnico: {DEEPFACE_IMPORT_ERROR}")
         input("Pressione ENTER para sair...")
         return
 

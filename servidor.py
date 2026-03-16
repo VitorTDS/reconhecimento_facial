@@ -2,10 +2,13 @@ from flask import Flask, render_template, Response, jsonify
 import cv2
 import numpy as np
 import os
+DEEPFACE_IMPORT_ERROR = None
+
 try:
     from deepface import DeepFace
-except ImportError:
+except Exception as exc:
     DeepFace = None
+    DEEPFACE_IMPORT_ERROR = exc
 import threading
 
 app = Flask(__name__)
@@ -110,7 +113,10 @@ def trocar_camera():
 
 if __name__ == '__main__':
     if DeepFace is None:
-        print('[AVISO] DeepFace nao instalado. Reconhecimento desativado (video continua funcionando).')
+        print('[AVISO] DeepFace indisponivel. Reconhecimento desativado (video continua funcionando).')
+        print('[AVISO] Para reconhecimento, use Python 3.10-3.12 com DeepFace/TensorFlow.')
+        if DEEPFACE_IMPORT_ERROR is not None:
+            print(f'[AVISO] Detalhe tecnico: {DEEPFACE_IMPORT_ERROR}')
     t = threading.Thread(target=processar_frames, daemon=True)
     t.start()
     print("\n[INFO] Acesse: http://localhost:5000\n")
