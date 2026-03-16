@@ -2,7 +2,13 @@
 import cv2
 import numpy as np
 import os
-from deepface import DeepFace
+DEEPFACE_IMPORT_ERROR = None
+
+try:
+    from deepface import DeepFace
+except Exception as exc:
+    DeepFace = None
+    DEEPFACE_IMPORT_ERROR = exc
 import threading
 
 app = Flask(__name__)
@@ -20,6 +26,9 @@ cam_proc = cv2.VideoCapture(0)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 def processar_frames():
+    if DeepFace is None:
+        return
+
     global pessoas_detectadas
     frame_count = 0
     while True:
@@ -103,6 +112,11 @@ def trocar_camera():
     return jsonify(sucesso=False, camera=indice_atual)
 
 if __name__ == '__main__':
+    if DeepFace is None:
+        print('[AVISO] DeepFace indisponivel. Reconhecimento desativado (video continua funcionando).')
+        print('[AVISO] Para reconhecimento, use Python 3.10-3.12 com DeepFace/TensorFlow.')
+        if DEEPFACE_IMPORT_ERROR is not None:
+            print(f'[AVISO] Detalhe tecnico: {DEEPFACE_IMPORT_ERROR}')
     t = threading.Thread(target=processar_frames, daemon=True)
     t.start()
     print("\n[INFO] Acesse: http://localhost:5000\n")

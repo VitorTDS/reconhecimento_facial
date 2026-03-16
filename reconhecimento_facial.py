@@ -1,11 +1,25 @@
 ﻿import cv2
 import numpy as np
 import os
-from deepface import DeepFace
+DEEPFACE_IMPORT_ERROR = None
+
+try:
+    from deepface import DeepFace
+except Exception as exc:
+    DeepFace = None
+    DEEPFACE_IMPORT_ERROR = exc
 
 PASTA_ROSTOS = "rostos_conhecidos"
 
 def main():
+    if DeepFace is None:
+        print("[ERRO] DeepFace indisponivel neste ambiente.")
+        print("       Use Python 3.10-3.12 para reconhecimento facial com DeepFace/TensorFlow.")
+        if DEEPFACE_IMPORT_ERROR is not None:
+            print(f"       Detalhe tecnico: {DEEPFACE_IMPORT_ERROR}")
+        input("Pressione ENTER para sair...")
+        return
+
     if not os.path.exists(PASTA_ROSTOS):
         os.makedirs(PASTA_ROSTOS)
         print(f"Pasta '{PASTA_ROSTOS}' criada. Adicione fotos e reinicie.")
