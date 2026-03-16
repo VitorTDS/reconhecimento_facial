@@ -21,7 +21,6 @@ def main():
         return
 
     print("[INFO] Camera iniciada. Pressione Q para sair.")
-    frame_count = 0
     resultado_nome = "Analisando..."
     resultado_cor = (200, 200, 0)
 
@@ -29,28 +28,25 @@ def main():
         ret, frame = cap.read()
         if not ret:
             break
-        frame_count += 1
-        if frame_count % 20 == 0:
-            try:
-                cv2.imwrite("temp_frame.jpg", frame)
-                resultado = DeepFace.find(
-                    img_path="temp_frame.jpg",
-                    db_path=PASTA_ROSTOS,
-                    enforce_detection=False,
-                    silent=True
-                )
-                if len(resultado) > 0 and not resultado[0].empty:
-                    identidade = resultado[0].iloc[0]["identity"]
-                    nome = os.path.splitext(os.path.basename(identidade))[0]
-                    nome = nome.replace("_ok", "").replace("_", " ").title()
-                    resultado_nome = nome
-                    resultado_cor = (0, 220, 100)
-                else:
-                    resultado_nome = "Desconhecido"
-                    resultado_cor = (0, 60, 220)
-            except Exception as e:
-                resultado_nome = "Nenhum rosto"
-                resultado_cor = (100, 100, 100)
+        try:
+            resultado = DeepFace.find(
+                img_path=frame,
+                db_path=PASTA_ROSTOS,
+                enforce_detection=False,
+                silent=True
+            )
+            if len(resultado) > 0 and not resultado[0].empty:
+                identidade = resultado[0].iloc[0]["identity"]
+                nome = os.path.splitext(os.path.basename(identidade))[0]
+                nome = nome.replace("_ok", "").replace("_", " ").title()
+                resultado_nome = nome
+                resultado_cor = (0, 220, 100)
+            else:
+                resultado_nome = "Desconhecido"
+                resultado_cor = (0, 60, 220)
+        except Exception:
+            resultado_nome = "Nenhum rosto"
+            resultado_cor = (100, 100, 100)
 
         h, w = frame.shape[:2]
         cv2.rectangle(frame, (0, h-50), (w, h), (30, 30, 30), cv2.FILLED)
@@ -60,8 +56,6 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
-    if os.path.exists("temp_frame.jpg"):
-        os.remove("temp_frame.jpg")
     cap.release()
     cv2.destroyAllWindows()
 
