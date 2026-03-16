@@ -1,0 +1,7 @@
+opencv-python>=4.8
+numpy>=1.24
+flask>=2.3
+
+# DeepFace depends on TensorFlow, which currently has no wheels for Python 3.13+.
+# For Python 3.13/3.14, create an environment with Python 3.10-3.12.
+deepface==0.0.99; python_version < '3.13'

@@ -1,11 +1,19 @@
-﻿import cv2
+import cv2
 import numpy as np
 import os
-from deepface import DeepFace
+try:
+    from deepface import DeepFace
+except ImportError:
+    DeepFace = None
 
 PASTA_ROSTOS = "rostos_conhecidos"
 
 def main():
+    if DeepFace is None:
+        print("[ERRO] DeepFace nao instalado. Use Python 3.10-3.12 e execute: pip install -r requirements.txt")
+        input("Pressione ENTER para sair...")
+        return
+
     if not os.path.exists(PASTA_ROSTOS):
         os.makedirs(PASTA_ROSTOS)
         print(f"Pasta '{PASTA_ROSTOS}' criada. Adicione fotos e reinicie.")
