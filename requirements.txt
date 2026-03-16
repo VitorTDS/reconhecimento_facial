@@ -1,6 +1,7 @@
 opencv-python>=4.8
 numpy>=1.24
 flask>=2.3
+pandas>=2.0; python_version < '3.13'
 
 # DeepFace depende de TensorFlow, que no momento nao possui wheels para Python 3.13+.
 # Para reconhecimento facial, use Python 3.10-3.12.
