@@ -12,7 +12,8 @@ except Exception as exc:
 import threading
 
 app = Flask(__name__)
-PASTA_ROSTOS = r"C:\Users\vf619\rostos_conhecidos"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PASTA_ROSTOS = os.path.join(BASE_DIR, "rostos_conhecidos")
 
 indice_atual = 0
 pessoas_detectadas = []
@@ -27,6 +28,10 @@ face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_fronta
 
 def processar_frames():
     if DeepFace is None:
+        return
+
+    if not os.path.isdir(PASTA_ROSTOS):
+        print(f"[AVISO] Pasta de rostos nao encontrada: {PASTA_ROSTOS}")
         return
 
     global pessoas_detectadas
@@ -112,6 +117,10 @@ def trocar_camera():
     return jsonify(sucesso=False, camera=indice_atual)
 
 if __name__ == '__main__':
+    if not os.path.isdir(PASTA_ROSTOS):
+        os.makedirs(PASTA_ROSTOS, exist_ok=True)
+        print(f"[AVISO] Pasta '{PASTA_ROSTOS}' criada. Adicione fotos de referencia para reconhecer pessoas.")
+
     if DeepFace is None:
         print('[AVISO] DeepFace indisponivel. Reconhecimento desativado (video continua funcionando).')
         print('[AVISO] Para reconhecimento, use Python 3.10-3.12 com DeepFace/TensorFlow.')
