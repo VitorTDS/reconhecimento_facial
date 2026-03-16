@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reconhecimento Facial</title>
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #121212;
+      color: #efefef;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      width: min(960px, 96vw);
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin: 0 0 12px;
+      text-align: center;
+    }
+    .frame-wrap {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #2c2c2c;
+      background: #000;
+    }
+    #video {
+      width: 100%;
+      display: block;
+    }
+    #status {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: #cfcfcf;
+      min-height: 1.2rem;
+    }
+    .toolbar {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    button {
+      background: #2a2a2a;
+      color: #fff;
+      border: 1px solid #474747;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    button:hover { background: #343434; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Reconhecimento Facial em Tempo Real</h1>
+
+    <div class="frame-wrap">
+      <img id="video" src="/video" alt="Stream da câmera" />
+    </div>
+
+    <div class="toolbar">
+      <button id="trocarCamera" type="button">Trocar câmera</button>
+    </div>
+
+    <p id="status">Carregando status...</p>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const btnTrocar = document.getElementById('trocarCamera');
+
+    async function atualizarStatus() {
+      try {
+        const resp = await fetch('/status');
+        const dados = await resp.json();
+        const nomes = (dados.pessoas || []).map(p => p.nome);
+        const unicos = [...new Set(nomes)];
+        const textoPessoas = unicos.length ? unicos.join(', ') : 'Nenhuma pessoa detectada';
+        statusEl.textContent = `Câmera: ${dados.camera} | Pessoas: ${textoPessoas}`;
+      } catch (err) {
+        statusEl.textContent = 'Falha ao obter status do servidor.';
+      }
+    }
+
+    btnTrocar.addEventListener('click', async () => {
+      btnTrocar.disabled = true;
+      try {
+        await fetch('/trocar_camera', { method: 'POST' });
+      } finally {
+        btnTrocar.disabled = false;
+        atualizarStatus();
+      }
+    });
+
+    atualizarStatus();
+    setInterval(atualizarStatus, 1000);
+  </script>
+</body>
+</html>
