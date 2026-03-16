@@ -1,3 +1,8 @@
 opencv-python
 numpy
 deepface
+# Backend de ML para o DeepFace:
+# - no Windows use tensorflow-intel (tensorflow padrão pode não ter wheel para sua versão do Python)
+tensorflow-intel>=2.12; platform_system == "Windows"
+# - nos demais sistemas use tensorflow padrão
+tensorflow>=2.12; platform_system != "Windows"
