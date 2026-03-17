@@ -2,12 +2,9 @@ opencv-python>=4.8
 numpy>=1.24
 flask>=2.3
 pandas>=2.0; python_version < '3.13'
+gunicorn>=21.2
 
 # DeepFace depende de TensorFlow, que no momento nao possui wheels para Python 3.13+.
-# Para reconhecimento facial, use Python 3.10-3.12.
+# Para reconhecimento facial completo, use Python 3.10-3.12.
 deepface==0.0.99; python_version < '3.13'
 tensorflow>=2.12,<2.17; python_version < '3.13'
-
-# Se estiver em Python 3.13+ e ja tiver deepface instalado no ambiente, remova-o para evitar
-# avisos de dependencia do pip ao instalar este arquivo:
-#   pip uninstall -y deepface
