@@ -3,89 +3,213 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Reconhecimento Facial</title>
+  <title>Reconhecimento Facial | Dashboard</title>
   <style>
-    :root { color-scheme: dark; }
+    :root {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --surface: #111827;
+      --border: #243047;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #2563eb;
+      --success: #22c55e;
+      --danger: #ef4444;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #121212;
-      color: #efefef;
-      display: grid;
-      place-items: center;
+      background: radial-gradient(circle at top, #172554 0%, var(--bg) 38%);
+      color: var(--text);
+      font-family: Inter, Segoe UI, Arial, sans-serif;
       min-height: 100vh;
+      padding: 24px;
     }
-    .container {
-      width: min(960px, 96vw);
+
+    .layout {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
     }
-    h1 {
-      font-size: 1.2rem;
-      margin: 0 0 12px;
-      text-align: center;
+
+    .card {
+      background: color-mix(in oklab, var(--surface) 94%, black);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.28);
     }
-    .frame-wrap {
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: .2px;
+    }
+
+    .muted { color: var(--muted); font-size: .9rem; }
+
+    .stream-wrap {
       position: relative;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
-      border: 1px solid #2c2c2c;
-      background: #000;
+      border: 1px solid var(--border);
+      background: #020617;
     }
+
     #video {
       width: 100%;
       display: block;
     }
-    #status {
-      margin-top: 12px;
-      font-size: 0.95rem;
-      color: #cfcfcf;
-      min-height: 1.2rem;
-    }
-    .toolbar {
-      margin-top: 12px;
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-    }
-    button {
-      background: #2a2a2a;
-      color: #fff;
-      border: 1px solid #474747;
+
+    .face-box {
+      position: absolute;
+      border: 2px solid;
       border-radius: 8px;
+      pointer-events: none;
+      font-size: .8rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      background: rgba(0,0,0,.45);
+      transform: translateY(-100%);
+      white-space: nowrap;
+    }
+
+    .actions { display: flex; gap: 8px; }
+
+    button {
+      border: 1px solid #334155;
+      border-radius: 10px;
       padding: 8px 12px;
+      color: white;
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background: #343434; }
+
+    button:disabled { opacity: .6; cursor: wait; }
+
+    .stats { display: grid; gap: 10px; }
+    .stat { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: #0b1220; }
+    .stat h3 { margin: 0 0 6px; font-size: .86rem; color: var(--muted); }
+    .stat p { margin: 0; font-size: 1.1rem; font-weight: 700; }
+
+    #peopleList { margin: 0; padding-left: 16px; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-  <main class="container">
-    <h1>Reconhecimento Facial em Tempo Real</h1>
+  <main class="layout">
+    <section class="card">
+      <div class="header">
+        <div>
+          <h1 class="title">Monitoramento em Tempo Real</h1>
+          <div class="muted" id="statusLine">Conectando ao servidor...</div>
+        </div>
+        <div class="actions">
+          <button id="trocarCamera" type="button">Trocar câmera</button>
+        </div>
+      </div>
 
-    <div class="frame-wrap">
-      <img id="video" src="/video" alt="Stream da câmera" />
-    </div>
+      <div class="stream-wrap" id="streamWrap">
+        <img id="video" src="/video" alt="Stream da câmera" />
+      </div>
+    </section>
 
-    <div class="toolbar">
-      <button id="trocarCamera" type="button">Trocar câmera</button>
-    </div>
-
-    <p id="status">Carregando status...</p>
+    <aside class="card">
+      <div class="header">
+        <h2 class="title">Painel Operacional</h2>
+      </div>
+      <div class="stats">
+        <article class="stat">
+          <h3>Saúde do sistema</h3>
+          <p id="health">Carregando...</p>
+        </article>
+        <article class="stat">
+          <h3>Pessoas detectadas</h3>
+          <p id="detectedCount">0</p>
+        </article>
+        <article class="stat">
+          <h3>Identidades encontradas</h3>
+          <ul id="peopleList"><li class="muted">Nenhuma detecção.</li></ul>
+        </article>
+      </div>
+    </aside>
   </main>
 
   <script>
-    const statusEl = document.getElementById('status');
+    const statusLine = document.getElementById('statusLine');
     const btnTrocar = document.getElementById('trocarCamera');
+    const healthEl = document.getElementById('health');
+    const streamWrap = document.getElementById('streamWrap');
+    const detectedCount = document.getElementById('detectedCount');
+    const peopleList = document.getElementById('peopleList');
 
-    async function atualizarStatus() {
+    function clearBoxes() {
+      streamWrap.querySelectorAll('.face-box').forEach(el => el.remove());
+    }
+
+    function renderBoxes(pessoas) {
+      clearBoxes();
+      pessoas.forEach(p => {
+        const box = document.createElement('div');
+        box.className = 'face-box';
+        box.style.left = `${p.x}%`;
+        box.style.top = `${p.y}%`;
+        box.style.width = `${p.w}%`;
+        box.style.height = `${p.h}%`;
+        box.style.borderColor = p.cor;
+        box.textContent = p.nome;
+        streamWrap.appendChild(box);
+      });
+    }
+
+    function renderPeopleList(pessoas) {
+      const names = [...new Set((pessoas || []).map(p => p.nome))];
+      peopleList.innerHTML = '';
+      if (!names.length) {
+        peopleList.innerHTML = '<li class="muted">Nenhuma detecção.</li>';
+        return;
+      }
+      names.forEach(name => {
+        const li = document.createElement('li');
+        li.textContent = name;
+        peopleList.appendChild(li);
+      });
+    }
+
+    async function updateStatus() {
       try {
-        const resp = await fetch('/status');
-        const dados = await resp.json();
-        const nomes = (dados.pessoas || []).map(p => p.nome);
-        const unicos = [...new Set(nomes)];
-        const textoPessoas = unicos.length ? unicos.join(', ') : 'Nenhuma pessoa detectada';
-        statusEl.textContent = `Câmera: ${dados.camera} | Pessoas: ${textoPessoas}`;
+        const [statusResp, healthResp] = await Promise.all([fetch('/status'), fetch('/health')]);
+        const dados = await statusResp.json();
+        const health = await healthResp.json();
+
+        const pessoas = dados.pessoas || [];
+        detectedCount.textContent = String(pessoas.length);
+        renderPeopleList(pessoas);
+        renderBoxes(pessoas);
+
+        statusLine.textContent = `Câmera ativa: ${dados.camera} | Base de rostos: ${dados.engine.known_faces} imagens`;
+        healthEl.textContent = health.deepface ? 'Operacional (DeepFace ativo)' : 'Parcial (apenas streaming)';
+        healthEl.style.color = health.deepface ? 'var(--success)' : 'var(--danger)';
       } catch (err) {
-        statusEl.textContent = 'Falha ao obter status do servidor.';
+        statusLine.textContent = 'Falha de comunicação com servidor.';
+        healthEl.textContent = 'Offline';
+        healthEl.style.color = 'var(--danger)';
       }
     }
 
@@ -95,12 +219,12 @@
         await fetch('/trocar_camera', { method: 'POST' });
       } finally {
         btnTrocar.disabled = false;
-        atualizarStatus();
+        updateStatus();
       }
     });
 
-    atualizarStatus();
-    setInterval(atualizarStatus, 1000);
+    updateStatus();
+    setInterval(updateStatus, 1200);
   </script>
 </body>
 </html>
